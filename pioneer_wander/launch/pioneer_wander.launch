@@ -1,0 +1,11 @@
+<launch>
+	<node pkg = "rosaria" type = "RosAria" name = "RosAria">
+		<param name="port" value="/dev/ttyUSB0" type="string"/>
+	</node>
+        <include file="$(find freenect_launch)/launch/freenect.launch"/>
+
+        <node pkg="depthimage_to_laserscan" type="depthimage_to_laserscan" name="depthimage_2_laserscan">
+	        <remap from="image" to="/camera/depth/image_raw"/>
+        </node>
+        <node pkg = "pioneer_wander" type = "pioneer_wander" name = "pioneer_wander"/>
+</launch>
