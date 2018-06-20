@@ -1,17 +1,17 @@
-#ifndef GUI_THREAD_H
-#define GUI_THREAD_H
+#ifndef MoveBaseTHREAD_H
+#define MoveBaseTHREAD_H
 
 #include <QThread>
 namespace global_planner {
 
 class MoveBase;
-class GUI_Thread : public QThread
+class MoveBaseThread : public QThread
 {
 private:
   MoveBase* move_base;
 public:
-  explicit GUI_Thread();
-  ~GUI_Thread();
+  explicit MoveBaseThread();
+  ~MoveBaseThread();
 
   void run();
 };

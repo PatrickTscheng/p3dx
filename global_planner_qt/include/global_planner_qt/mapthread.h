@@ -13,9 +13,6 @@ class MapThread : public QThread
 {
 private:
   AStar* astar;
-public:
-  bool isMapInit;
-  bool isPathInit;
 
 private:
   ros::NodeHandle nh;
@@ -25,7 +22,7 @@ public:
   MapThread();
   ~MapThread();
   void run();
-  void makePlan();
+  bool makePlan();
 private:
   void initMap();
   void updateMap(const nav_msgs::OccupancyGridConstPtr map);
@@ -33,6 +30,7 @@ private:
   bool isPathBlocked();
   void updateAll();
   void pubZeroVel();
+  void draw_costMap(int row, int col, int n, int value);
 };
 }
 

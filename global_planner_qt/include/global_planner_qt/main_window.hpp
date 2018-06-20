@@ -15,16 +15,13 @@
 #include <QtGui/QMainWindow>
 #include "ui_main_window.h"
 #include <QObject>
+//#include "ros/ros.h"
 
 /*****************************************************************************
 ** Namespace
 *****************************************************************************/
-class QScrollArea;
-class QLabel;
-class QTimer;
-
+class QProcess;
 namespace global_planner {
-
 /*****************************************************************************
 ** Interface [MainWindow]
 *****************************************************************************/
@@ -33,25 +30,18 @@ namespace global_planner {
  */
 class MainWindow : public QMainWindow {
 Q_OBJECT
-public:
-  QScrollArea *scrollArea;
-  QLabel* label;
-  QImage image;
-  QTimer* timer;
-
-  std::pair<int, int> roboter_pos_gui;
 
 public:
   MainWindow(QWidget *parent = 0);
-	~MainWindow();
-  void drawMap();
-
-private:
-  void drawPath();
-public Q_SLOTS:
-  void update_roboter_pos();
-  void quit_simulation();
+  ~MainWindow();
+private Q_SLOTS:
+//  ros::Publisher pub_cmd;
+//  ros::NodeHandle nh;
+  void stop_simulation();
   void start_simulation();
+  void open_MapViewer();
+//  void pubZeroVel();
+
 private:
   Ui::MainWindow *ui;
 };

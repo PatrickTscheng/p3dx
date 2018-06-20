@@ -5,7 +5,8 @@
  *      Author: yashuai
  */
 
-#include "AStar.h"
+#include "global_planner_qt/AStar.h"
+#include "global_planner_qt/param.h"
 
 namespace global_planner {
 
@@ -28,10 +29,10 @@ bool AStar::isValid(int row, int col, int ROW, int COL)
 bool AStar::isUnBlocked(const std::vector<std::vector<int> > &grid, const int row, const int col)
 {
     // Returns true if the cell is not blocked else false
-    if (grid[row][col] == 0 || grid[row][col] == -1)
-        return true;
-    else
+    if (grid[row][col] == 100 || grid[row][col] == 110)
         return false;
+    else
+        return true;
 }
 
 bool AStar::isDestination(int row, int col, const Pair dest)
@@ -42,11 +43,15 @@ bool AStar::isDestination(int row, int col, const Pair dest)
         return false;
 }
 
-double AStar::calculateHValue(int row, int col, const Pair &dest)
+double AStar::calculateHValue(const std::vector<std::vector<int> > &grid, int row, int col, const Pair &dest)
 {
     // Return using the distance formula
-    return ((double)sqrt ((row - dest.first)*(row - dest.first)
-                          + (col - dest.second)*(col - dest.second)));
+    double HValue = ((double)sqrt ((row - dest.first)*(row - dest.first)
+                                   + (col - dest.second)*(col - dest.second)));
+    if (grid[row][col] >= 120) {
+      HValue += 20.0 + grid[row][col] - 120;
+    }
+    return HValue;
 }
 
 void AStar::tracePath(cell** cellDetails, const Pair &dest, std::vector<Pair> &plan)
@@ -68,7 +73,7 @@ void AStar::tracePath(cell** cellDetails, const Pair &dest, std::vector<Pair> &p
     plan.push_back(std::make_pair (row, col));
 }
 
-void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &start, const Pair &dest, std::vector<Pair> &plan)
+bool AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &start, const Pair &dest, std::vector<Pair> &plan)
 {
 	int ROW = grid.size();
 	int COL = grid[0].size();
@@ -77,27 +82,28 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
     if (isValid (dest.first, dest.second, ROW, COL) == false)
     {
         printf ("Destination is invalid\n");
-        return;
+        return false;
     }
 
     // Either the source or the destination is blocked
     if (isUnBlocked(grid, dest.first, dest.second) == false)
     {
         printf ("the destination is blocked\n");
-        return;
+        return false;
     }
     /**
     if (isUnBlocked(grid, start.first, start.second) == false)
     {
       printf ("Source is blocked\n");
-      return;
+
+      return false;
     }
-*/
+    */
     // If the destination cell is the same as source cell
     if (isDestination(start.first, start.second, dest) == true)
     {
         printf ("We are already at the destination\n");
-        return;
+        return false;
     }
 
     // Create a closed list and initialise it to false which means
@@ -136,22 +142,25 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
     cellDetails[i][j].parent_i = i;
     cellDetails[i][j].parent_j = j;
 
-    std::vector<pPair> openList;
 
+    //std::vector<pPair> openList;
+    std::priority_queue<pPair, std::vector<pPair>, CompareDist > pq;
     // Put the starting cell on the open list and set its
     // 'f' as 0
-    openList.push_back(std::make_pair (0.0, std::make_pair (i, j)));
+    //pq.push(std::make_pair (0.0, std::make_pair (i, j)));
+    pq.push(std::make_pair (0.0, std::make_pair (i, j)));
 
     // We set this boolean value as false as initially
     // the destination is not reached.
     bool foundDest = false;
 
-    while (!openList.empty())
+    while (!pq.empty())
     {
-        pPair p = *openList.begin();
-
+        //pPair p = *openList.begin();
+        pPair p = pq.top();
+        pq.pop();
         // Remove this vertex from the open list
-        openList.erase(openList.begin());
+        //openList.erase(openList.begin());
 
         // Add this vertex to the open list
         i = p.second.first;
@@ -176,7 +185,7 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                 printf ("The destination cell is found\n");
                 tracePath (cellDetails, dest, plan);
                 foundDest = true;
-                return;
+                return true;
             }
             // If the successor is already on the closed
             // list or if it is blocked, then ignore it.
@@ -185,7 +194,7 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                      isUnBlocked(grid, i-1, j) == true)
             {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue (i-1, j, dest);
+                hNew = calculateHValue (grid, i-1, j, dest);
                 fNew = gNew + hNew;
 
                 // If it isn’t on the open list, add it to
@@ -199,7 +208,8 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                 if (cellDetails[i-1][j].f == std::numeric_limits<float>::max() ||
                         cellDetails[i-1][j].f > fNew)
                 {
-                    openList.push_back(std::make_pair(fNew, std::make_pair(i-1, j)));
+
+                    pq.push(std::make_pair(fNew, std::make_pair(i-1, j)));
 
                     // Update the details of this cell
                     cellDetails[i-1][j].f = fNew;
@@ -226,7 +236,7 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                 printf("The destination cell is found\n");
                 tracePath(cellDetails, dest, plan);
                 foundDest = true;
-                return;
+                return true;
             }
             // If the successor is already on the closed
             // list or if it is blocked, then ignore it.
@@ -235,13 +245,13 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                      isUnBlocked(grid, i+1, j) == true)
             {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i+1, j, dest);
+                hNew = calculateHValue(grid, i+1, j, dest);
                 fNew = gNew + hNew;
 
                 if (cellDetails[i+1][j].f == std::numeric_limits<float>::max() ||
                         cellDetails[i+1][j].f > fNew)
                 {
-                    openList.push_back(std::make_pair (fNew, std::make_pair (i+1, j)));
+                    pq.push(std::make_pair (fNew, std::make_pair (i+1, j)));
                     // Update the details of this cell
                     cellDetails[i+1][j].f = fNew;
                     cellDetails[i+1][j].g = gNew;
@@ -267,7 +277,7 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                 printf("The destination cell is found\n");
                 tracePath(cellDetails, dest, plan);
                 foundDest = true;
-                return;
+                return true;
             }
 
             // If the successor is already on the closed
@@ -277,13 +287,13 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                      isUnBlocked (grid, i, j+1) == true)
             {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue (i, j+1, dest);
+                hNew = calculateHValue (grid, i, j+1, dest);
                 fNew = gNew + hNew;
 
                 if (cellDetails[i][j+1].f == std::numeric_limits<float>::max() ||
                         cellDetails[i][j+1].f > fNew)
                 {
-                    openList.push_back(std::make_pair(fNew, std::make_pair (i, j+1)));
+                    pq.push(std::make_pair(fNew, std::make_pair (i, j+1)));
 
                     // Update the details of this cell
                     cellDetails[i][j+1].f = fNew;
@@ -310,7 +320,7 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                 printf("The destination cell is found\n");
                 tracePath(cellDetails, dest, plan);
                 foundDest = true;
-                return;
+                return true;
             }
 
             // If the successor is already on the closed
@@ -320,13 +330,13 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                      isUnBlocked(grid, i, j-1) == true)
             {
                 gNew = cellDetails[i][j].g + 1.0;
-                hNew = calculateHValue(i, j-1, dest);
+                hNew = calculateHValue(grid, i, j-1, dest);
                 fNew = gNew + hNew;
 
                 if (cellDetails[i][j-1].f == std::numeric_limits<float>::max() ||
                         cellDetails[i][j-1].f > fNew)
                 {
-                    openList.push_back(std::make_pair (fNew, std::make_pair (i, j-1)));
+                    pq.push(std::make_pair (fNew, std::make_pair (i, j-1)));
 
                     // Update the details of this cell
                     cellDetails[i][j-1].f = fNew;
@@ -353,7 +363,7 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                 printf ("The destination cell is found\n");
                 tracePath (cellDetails, dest, plan);
                 foundDest = true;
-                return;
+                return true;
             }
 
             // If the successor is already on the closed
@@ -363,13 +373,13 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                      isUnBlocked(grid, i-1, j+1) == true)
             {
                 gNew = cellDetails[i][j].g + 1.414;
-                hNew = calculateHValue(i-1, j+1, dest);
+                hNew = calculateHValue(grid, i-1, j+1, dest);
                 fNew = gNew + hNew;
 
                 if (cellDetails[i-1][j+1].f == std::numeric_limits<float>::max() ||
                         cellDetails[i-1][j+1].f > fNew)
                 {
-                    openList.push_back(std::make_pair (fNew, std::make_pair(i-1, j+1)));
+                    pq.push(std::make_pair (fNew, std::make_pair(i-1, j+1)));
 
                     // Update the details of this cell
                     cellDetails[i-1][j+1].f = fNew;
@@ -396,7 +406,7 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                 printf ("The destination cell is found\n");
                 tracePath (cellDetails, dest, plan);
                 foundDest = true;
-                return;
+                return true;
             }
 
             // If the successor is already on the closed
@@ -406,13 +416,13 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                      isUnBlocked(grid, i-1, j-1) == true)
             {
                 gNew = cellDetails[i][j].g + 1.414;
-                hNew = calculateHValue(i-1, j-1, dest);
+                hNew = calculateHValue(grid, i-1, j-1, dest);
                 fNew = gNew + hNew;
 
                 if (cellDetails[i-1][j-1].f == std::numeric_limits<float>::max() ||
                         cellDetails[i-1][j-1].f > fNew)
                 {
-                    openList.push_back(std::make_pair (fNew, std::make_pair (i-1, j-1)));
+                    pq.push(std::make_pair (fNew, std::make_pair (i-1, j-1)));
                     // Update the details of this cell
                     cellDetails[i-1][j-1].f = fNew;
                     cellDetails[i-1][j-1].g = gNew;
@@ -438,7 +448,7 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                 printf ("The destination cell is found\n");
                 tracePath (cellDetails, dest, plan);
                 foundDest = true;
-                return;
+                return true;
             }
 
             // If the successor is already on the closed
@@ -448,13 +458,13 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                      isUnBlocked(grid, i+1, j+1) == true)
             {
                 gNew = cellDetails[i][j].g + 1.414;
-                hNew = calculateHValue(i+1, j+1, dest);
+                hNew = calculateHValue(grid, i+1, j+1, dest);
                 fNew = gNew + hNew;
 
                 if (cellDetails[i+1][j+1].f == std::numeric_limits<float>::max() ||
                         cellDetails[i+1][j+1].f > fNew)
                 {
-                    openList.push_back(std::make_pair(fNew, std::make_pair (i+1, j+1)));
+                    pq.push(std::make_pair(fNew, std::make_pair (i+1, j+1)));
 
                     // Update the details of this cell
                     cellDetails[i+1][j+1].f = fNew;
@@ -481,7 +491,7 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                 printf("The destination cell is found\n");
                 tracePath(cellDetails, dest, plan);
                 foundDest = true;
-                return;
+                return true;
             }
 
             // If the successor is already on the closed
@@ -491,13 +501,13 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
                      isUnBlocked(grid, i+1, j-1) == true)
             {
                 gNew = cellDetails[i][j].g + 1.414;
-                hNew = calculateHValue(i+1, j-1, dest);
+                hNew = calculateHValue(grid, i+1, j-1, dest);
                 fNew = gNew + hNew;
 
                 if (cellDetails[i+1][j-1].f == std::numeric_limits<float>::max() ||
                         cellDetails[i+1][j-1].f > fNew)
                 {
-                    openList.push_back(std::make_pair(fNew, std::make_pair(i+1, j-1)));
+                    pq.push(std::make_pair(fNew, std::make_pair(i+1, j-1)));
 
                     // Update the details of this cell
                     cellDetails[i+1][j-1].f = fNew;
@@ -514,10 +524,11 @@ void AStar::aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &
     // list is empty, then we conclude that we failed to
     // reach the destiantion cell. This may happen when the
     // there is no way to destination cell (due to blockages)
-    if (foundDest == false)
+    if (foundDest == false) {
         printf("Failed to find the Destination Cell\n");
-
-    return;
+        return false;
+    }
+    return true;
 }
 
 } /* namespace global_planner */

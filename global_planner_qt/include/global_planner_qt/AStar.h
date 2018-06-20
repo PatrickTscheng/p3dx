@@ -34,6 +34,14 @@ struct cell
     double f, g, h;
 };
 
+class CompareDist
+{
+public:
+  bool operator()(pPair n1,pPair n2) {
+          return n1.first > n2.first;
+      }
+};
+
 class AStar {
 public:
 	AStar();
@@ -53,7 +61,7 @@ private:
 	bool isDestination(int row, int col, const Pair dest);
 
 	// A Utility Function to calculate the 'h' heuristics.
-	double calculateHValue(int row, int col, const Pair &dest);
+  double calculateHValue(const std::vector<std::vector<int> > &grid, int row, int col, const Pair &dest);
 
 	// A Utility Function to trace the path from the source
 	// to destination
@@ -63,7 +71,8 @@ public:
 	// A Function to find the shortest path between
 	// a given source cell to a destination cell according
 	// to A* Search Algorithm
-  void aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &start, const Pair &dest, std::vector<Pair> &plan);
+  // return true if path is found, else false
+  bool aStarSearch(const std::vector<std::vector<int> > &grid, const Pair &start, const Pair &dest, std::vector<Pair> &plan);
 };
 
 } /* namespace global_planner */
